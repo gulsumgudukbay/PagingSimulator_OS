@@ -26,6 +26,8 @@ void enqueue( uint32_t addr)
 {
 	struct node* temp;
 
+	printf("enqweqwe %d\n", addr);
+
 	if( !queue_head)
 	{
 		queue_head = (struct node*) malloc( sizeof(struct node));
@@ -61,37 +63,63 @@ uint32_t dequeue( int* err)
 	return addr;
 }
 
+int requeue( uint32_t addr)
+{
+	struct node* cur, *temp;
+	struct node* prev;
+
+	cur = queue_head;
+	prev = cur;
+	while( cur)
+	{
+		if( cur->addr == addr)
+		{
+
+			if( cur == queue_tail)
+				queue_tail = prev;
+
+			//ananı siktim
+			if( cur == queue_head)
+			{
+				queue_head = cur->next;
+				free( cur);
+				enqueue(addr);
+				return 0;
+			}
+
+			temp = cur;
+			cur = cur->next;
+			prev->next = cur;
+			free(temp);
+			enqueue( addr);
+			return 0;
+		}
+		prev = cur;
+		cur = cur->next;
+	}
+
+	return -1;
+}
 
 void memory_access_fifo( uint32_t addr)
 {
+	uint32_t page_offset;
+	uint32_t inner_table;
+	uint32_t outer_table;
+
+	//evil bit level integer hacking
+	page_offset = addr & (0x00000FFF);
+	inner_table = (addr & (0x003FF000)) >> 12;
+	outer_table = (addr & (0xFFC00000)) >> 22;
+
+	
+
 
 }
 
-
-
-
 int main(void)
 {
-	int M = 5;
 
-	int* valid_frames = (int*) malloc( sizeof(int)*M);
-	memset( valid_frames, 0, sizeof(int)*M);
 
-	int err = 0;
-	enqueue(31);
-	enqueue(69);
-
-	printf("%d\n", dequeue(&err));
-	printf("%d\n", dequeue(&err));
-
-	printf("%d\n", dequeue(&err));
-	printf("%d\n", dequeue(&err));
-	enqueue(3169);
-	enqueue(6931);
-	enqueue(3131);
-	printf("%d\n", dequeue(&err));
-	printf("%d\n", dequeue(&err));
-	printf("%d\n", dequeue(&err));
-
-	return EXIT_SUCCESS;
+	return 0;
 }
