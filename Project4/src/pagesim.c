@@ -100,6 +100,22 @@ int requeue( uint32_t addr)
 
 	return -1;
 }
+///////////////////////////////////////////////////////////////////////////////////
+struct out_table_entry
+{
+	struct in_table_entry* inner_table;
+	int valid;
+};
+
+struct in_table_entry
+{
+	uint32_t frame_number;
+	int valid;
+};
+
+struct out_table_entry out_table[1024];
+int next_empty = 0;
+int M;
 
 void memory_access_fifo( uint32_t addr)
 {
@@ -112,14 +128,87 @@ void memory_access_fifo( uint32_t addr)
 	inner_table = (addr & (0x003FF000)) >> 12;
 	outer_table = (addr & (0xFFC00000)) >> 22;
 
-	
+	if( out_table[outer_table]->valid)
+	{
+		if( out_table[outer_table]->inner_table[inner_table]->valid)
+		{
+			uint32_t fnum = out_table[outer_table]->inner_table[inner_table]->frame_number;
+			uint32_t phys_addr = ((fnum << 12) & 0xFFFFF000) | page_offset;
+			printf( "%x\n", phys_addr);
+			requeue(addr);
+		}
+		else
+		{
+			if( next_empty < M)
+			{
+				out_table[outer_table]->inner_table[inner_table]->frame_number = next_empty;
+				out_table[outer_table]->inner_table[inner_table]->valid = 1;
+				next_empty++;
+				enqueue(addr);
+			}
+			else
+			{
+				int err;
+				uint32_t victim = dequeue( &err);
+				if( !err)
+				{
+					printf( "victim is %x", victim);
+					out_table[(victim & (0xFFC00000)) >> 12]->inner_table[(victim & (0x003FF000)) >> 22]->valid = 0;
+					out_table[outer_table]->inner_table[inner_table]->frame_number = victim;
+					out_table[outer_table]->inner_table[inner_table]->valid = 1;
+					enqueue(addr);
+				}
+				else
+				{
+					printf("what is going on?\n");
+					return;
+				}
+			}
+		}
+	}
+	else
+	{
+		//create inner table.
+		out_table[outer_table]->inner_table = (struct in_table_entry*) malloc( sizeof(in_table_entry) * 1024);
+		for( int i = 0; i < 1024; i++)
+			out_table[outer_table]->inner_table[i]->valid = 0;
+
+		if( next_empty < M)
+		{
+			out_table[outer_table]->inner_table[inner_table]->frame_number = next_empty;
+			out_table[outer_table]->inner_table[inner_table]->valid = 1;
+			next_empty++;
+			enqueue(addr);
+		}
+		else
+		{
+			int err;
+			uint32_t victim = dequeue( &err);
+			if( !err)
+			{
+				printf( "victim is %x", victim);
+				out_table[(victim & (0xFFC00000)) >> 12]->inner_table[(victim & (0x003FF000)) >> 22]->valid = 0;
+				out_table[outer_table]->inner_table[inner_table]->frame_number = victim;
+				out_table[outer_table]->inner_table[inner_table]->valid = 1;
+				enqueue(addr);
+			}
+			else
+			{
+				printf("what is going on?\n");
+				return;
+			}
+		}
+
+	}
 
 
 }
 
 int main(void)
 {
-
+	M = 10;
+	for( int i = 0; i < 1024; i++)
+		out_table[i]->valid = 0;
 
 	return 0;
 }
