@@ -209,6 +209,16 @@ struct range_node{
 	struct range_node *next;
 };
 
+struct in_table_entry* create_inner_table()
+{
+	struct in_table_entry* table = (struct in_table_entry*) malloc(sizeof(struct in_table_entry)*1024);
+	for(int i = 0; i < 1024; i++)
+	{
+		table[i].valid = 0;
+		table[i].used = 0;
+	}
+	return table;
+}
 
 void init( FILE* input1)
 {
@@ -228,6 +238,14 @@ void init( FILE* input1)
 		ranges = cur;
 	}
 
+	for(int i = 0; i < 1024; i++)
+	{
+		out_table[i].valid = 0;
+		out_table[i].used = 0;
+		out_table[i].inner_table = 0;
+	}
+	return table;
+
 	for(cur = ranges; cur; cur = cur->next)
 	{
 		X = cur->X;
@@ -241,42 +259,41 @@ void init( FILE* input1)
 
 		printf("%8x %8x: %x %x %x %x\n", X, Y, Xout, Yout, Xin, Yin);
 
-		//yarraaan basi
 		out_table[Xout].used = 1;
-		out_table[Xout].valid = 0;
-		out_table[Xout].inner_table = (struct in_table_entry*) malloc( sizeof(struct in_table_entry) * 1024);
-		for( uint32_t k = 0; k < 1024; k++)
-		{
-			out_table[Xout].inner_table[k].used = ( k >= Xin ? 1 : 0);
-			out_table[Xout].inner_table[k].valid = 0;
-		}
 
-		//ortasi
-		for( uint32_t j = Xout+1; j < Yout-1 && Yout > 0; j++)
+		if(!out_table[Xout].inner_table)
+			out_table[Xout].inner_table = create_inner_table();
+
+		if(Yout - Xout > 0)
 		{
-			out_table[j].used = 1;
-			out_table[j].valid = 0;
-			out_table[j].inner_table = (struct in_table_entry*) malloc( sizeof(struct in_table_entry) * 1024);
-			for( uint32_t k = 0; k < 1024; k++)
+			for(int i = Xin; i < 1024; i++)
 			{
-				out_table[j].inner_table[k].used = 1;
-				out_table[j].inner_table[k].valid = 0;
+				out_table[Xout].inner_table[i].used = 1;
+			}
+
+			for(int i = Xout+1; i < Yout; i++)
+			{
+				if(!out_table[i].inner_table)
+					out_table[i].inner_table = create_inner_table();
+
+				for(int j = 0; j < 1024; j++)
+				{
+					out_table[i].inner_table[j].used = 1;
+				}
+			}
+
+			for(int i = 0; i < Yin; i++)
+			{
+				out_table[Yout].inner_table[i].used = 1;
 			}
 		}
-
-		//yarraaan sapi
-		if( Yout > 0)
+		else
 		{
-			out_table[Yout-1].used = 1;
-			out_table[Yout-1].valid = 0;
-			out_table[Yout-1].inner_table = (struct in_table_entry*) malloc( sizeof(struct in_table_entry) * 1024);
-			for( uint32_t k = 0; k < 1024; k++)
+			for(int i = Xin; i < Yin; i++)
 			{
-				out_table[Yout-1].inner_table[k].used = ( k < Yin ? 1 : 0);
-				out_table[Yout-1].inner_table[k].valid = 0;
+				out_table[Xout].inner_table[i].used = 1;
 			}
 		}
-	}
 }
 
 int main(void)
