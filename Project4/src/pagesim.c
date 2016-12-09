@@ -6,11 +6,11 @@
  Copyright   :
  ============================================================================
  */
-
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
-
+#include <getopt.h>
 
 int next_empty = 0;
 
@@ -215,6 +215,7 @@ struct range_node * read_ranges( FILE* input1)
 		cur->next = ranges;
 		ranges = cur;
 	}
+
 	return ranges;
 }
 
@@ -294,27 +295,81 @@ void init( struct range_node * ranges)
 	}
 }
 
-int main(void)
+int main(int argc, char** argv)
 {
-	M = 10;
-	FILE* in1 = fopen("in1.txt", "r+");
-	FILE* in2 = fopen("in2.txt", "r+");
+	FILE* in1, *in2;
+	uint32_t vmsize = 0;
+	int a = 0;
+	int c;
+  opterr = 0;
+	char* out_file_name;
 
-	uint32_t vmsize = 10;
+	for (int index = 0; index < argc; index++){
+		if(index == 1){
+			in1 = fopen(argv[index], "r+");
+			printf("in1 filename %s\n", argv[index]);
+		}
+		else if(index == 2){
+			in2 = fopen(argv[index], "r+");
+			printf("in2 filename %s\n", argv[index]);
+		}
+		else if(index == 3){
+			M = atoi(argv[index]);
+			printf("M:  %d\n", M);
 
-	struct range_node myrange;
-	myrange.X = 0;
-	myrange.Y = vmsize;
+		}
+		else if(index == 4){
+			out_file_name = argv[index];
+		}
+	}
 
-	struct range_node* rng = read_ranges( in1);
-	init(rng);
+
+  while ((c = getopt (argc, argv, "a:r:")) != -1)
+    switch (c)
+    {
+      case 'a':
+        a = atoi(optarg);
+        break;
+      case 'r':
+        sscanf(optarg,"%X",&vmsize);
+				printf( "vmsize: 0x%08x\n", vmsize);
+        break;
+      case '?':
+        if (optopt == 'a' || optopt == 'r')
+          fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+        else if (isprint (optopt))
+          fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+        else
+          fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
+        return 1;
+      default:
+        abort ();
+      }
+  printf ("a = %d, vmsize = %x\n", a, vmsize);
+
+
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////
+
+	if(vmsize == 0){
+		struct range_node* rng = read_ranges( in1);
+		init(rng);
+	}
+	else{
+		struct range_node myrange;
+		myrange.next = 0;
+		myrange.X = 0;
+		myrange.Y = vmsize;
+		init(&myrange);
+	}
 
 	//init(&myrange);
 	uint32_t inputtanokunancisim;
 
 	while(fscanf(in2, "%x", &inputtanokunancisim) != EOF)
 	{
-		memory_access(inputtanokunancisim, 0);
+		memory_access(inputtanokunancisim, a);
 	}
 
 	return 0;
