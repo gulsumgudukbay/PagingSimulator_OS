@@ -201,23 +201,29 @@ struct in_table_entry* create_inner_table()
 	return table;
 }
 
-void init( FILE* input1)
+struct range_node * read_ranges( FILE* input1)
+{
+		struct range_node *ranges, *cur;
+		ranges = 0;
+
+		while(fscanf(input1, "%x %x", &X, &Y) != EOF)
+		{
+			cur = (struct range_node*)malloc(sizeof(struct range_node));
+			cur->X = X;
+			cur->Y = Y;
+			cur->next = ranges;
+			ranges = cur;
+		}
+
+		return ranges;
+}
+
+void init( struct range_node * ranges)
 {
 	uint32_t Xin, Yin;
 	uint32_t Xout, Yout;
 	uint32_t X, Y;
 
-	struct range_node *ranges, *cur;
-	ranges = 0;
-
-	while(fscanf(input1, "%x %x", &X, &Y) != EOF)
-	{
-		cur = (struct range_node*)malloc(sizeof(struct range_node));
-		cur->X = X;
-		cur->Y = Y;
-		cur->next = ranges;
-		ranges = cur;
-	}
 
 	for(int i = 0; i < 1024; i++)
 	{
@@ -293,8 +299,16 @@ int main(void)
 	FILE* in1 = fopen("in1.txt", "r+");
 	FILE* in2 = fopen("in2.txt", "r+");
 
-	init(in1);
+	uint32_t vmsize = 10;
 
+	struct range_node myrange;
+	myrange.X = 0;
+	myrange.Y = vmsize;
+
+	struct range_node* rng = read_ranges( in1);
+	init(rng);
+
+	//init(&myrange);
 	uint32_t inputtanokunancisim;
 
 	while(fscanf(in2, "%x", &inputtanokunancisim) != EOF)
