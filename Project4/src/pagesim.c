@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
+
+int next_empty = 0;
+
 //queue
 struct node
 {
@@ -26,8 +29,7 @@ void enqueue( uint32_t addr)
 {
 	struct node* temp;
 
-	printf("enqweqwe %d\n", addr);
-
+	printf( "enqueue 0x%08x\n", addr);
 	if( !queue_head)
 	{
 		queue_head = (struct node*) malloc( sizeof(struct node));
@@ -75,10 +77,11 @@ int requeue( uint32_t addr)
 		if( cur->addr == addr)
 		{
 
+			printf( "r-");
 			if( cur == queue_tail)
 				queue_tail = prev;
 
-			//ananı siktim
+
 			if( cur == queue_head)
 			{
 				queue_head = cur->next;
@@ -116,10 +119,9 @@ struct in_table_entry
 };
 
 struct out_table_entry out_table[1024];
-int next_empty = 0;
 int M;
 
-void memory_access_fifo( uint32_t addr)
+void memory_access( uint32_t addr, int isLRU)
 {
 	uint32_t page_offset;
 	uint32_t inner_table;
@@ -130,57 +132,29 @@ void memory_access_fifo( uint32_t addr)
 	inner_table = (addr & (0x003FF000)) >> 12;
 	outer_table = (addr & (0xFFC00000)) >> 22;
 
-	if( out_table[outer_table].valid)
+
+	if( out_table[outer_table].inner_table[inner_table].valid)
 	{
-		if( out_table[outer_table].inner_table[inner_table].valid)
-		{
-			uint32_t fnum = out_table[outer_table].inner_table[inner_table].frame_number;
-			uint32_t phys_addr = ((fnum << 12) & 0xFFFFF000) | page_offset;
-			printf( "%x\n", phys_addr);
+		if( isLRU)
 			requeue(addr);
-		}
-		else
-		{
-			if( next_empty < M)
-			{
-				out_table[outer_table].inner_table[inner_table].frame_number = next_empty;
-				out_table[outer_table].inner_table[inner_table].valid = 1;
-				next_empty++;
-				enqueue(addr);
-			}
-			else
-			{
-				int err;
-				uint32_t victim = dequeue( &err);
-				if( !err)
-				{
-					printf( "victim is %x", victim);
-					out_table[(victim & (0xFFC00000)) >> 12].inner_table[(victim & (0x003FF000)) >> 22].valid = 0;
-					out_table[outer_table].inner_table[inner_table].frame_number = victim;
-					out_table[outer_table].inner_table[inner_table].valid = 1;
-					enqueue(addr);
-				}
-				else
-				{
-					printf("what is going on?\n");
-					return;
-				}
-			}
-		}
+
+
+		uint32_t fnum = out_table[outer_table].inner_table[inner_table].frame_number;
+		uint32_t phys_addr = ((fnum << 12) & 0xFFFFF000) | page_offset;
+		printf( "0x%08x\n", phys_addr);
 	}
 	else
 	{
-		//create inner table.
-		out_table[outer_table].inner_table = (struct in_table_entry*) malloc( sizeof(struct in_table_entry) * 1024);
-		for( int i = 0; i < 1024; i++)
-			out_table[outer_table].inner_table[i].valid = 0;
-
 		if( next_empty < M)
 		{
 			out_table[outer_table].inner_table[inner_table].frame_number = next_empty;
 			out_table[outer_table].inner_table[inner_table].valid = 1;
 			next_empty++;
 			enqueue(addr);
+
+			uint32_t fnum = out_table[outer_table].inner_table[inner_table].frame_number;
+			uint32_t phys_addr = ((fnum << 12) & 0xFFFFF000) | page_offset;
+			printf( "0x%08x x\n", phys_addr);
 		}
 		else
 		{
@@ -188,11 +162,15 @@ void memory_access_fifo( uint32_t addr)
 			uint32_t victim = dequeue( &err);
 			if( !err)
 			{
-				printf( "victim is %x", victim);
-				out_table[(victim & (0xFFC00000)) >> 12].inner_table[(victim & (0x003FF000)) >> 22].valid = 0;
-				out_table[outer_table].inner_table[inner_table].frame_number = victim;
+				printf( "victim is 0x%08x\n", victim);
+				out_table[(victim & (0xFFC00000)) >> 22].inner_table[(victim & (0x003FF000)) >> 12].valid = 0;
+				out_table[outer_table].inner_table[inner_table].frame_number = victim >> 12;
 				out_table[outer_table].inner_table[inner_table].valid = 1;
 				enqueue(addr);
+
+				uint32_t fnum = out_table[outer_table].inner_table[inner_table].frame_number;
+				uint32_t phys_addr = ((fnum << 12) & 0xFFFFF000) | page_offset;
+				printf( "0x%08x x\n", phys_addr);
 			}
 			else
 			{
@@ -201,6 +179,9 @@ void memory_access_fifo( uint32_t addr)
 			}
 		}
 	}
+
+	out_table[outer_table].inner_table[inner_table].valid = 1;
+
 }
 
 struct range_node{
@@ -244,7 +225,6 @@ void init( FILE* input1)
 		out_table[i].used = 0;
 		out_table[i].inner_table = 0;
 	}
-	return table;
 
 	for(cur = ranges; cur; cur = cur->next)
 	{
@@ -261,11 +241,13 @@ void init( FILE* input1)
 
 		out_table[Xout].used = 1;
 
+
 		if(!out_table[Xout].inner_table)
 			out_table[Xout].inner_table = create_inner_table();
 
 		if(Yout - Xout > 0)
 		{
+
 			for(int i = Xin; i < 1024; i++)
 			{
 				out_table[Xout].inner_table[i].used = 1;
@@ -273,6 +255,8 @@ void init( FILE* input1)
 
 			for(int i = Xout+1; i < Yout; i++)
 			{
+				out_table[i].used = 1;
+
 				if(!out_table[i].inner_table)
 					out_table[i].inner_table = create_inner_table();
 
@@ -282,10 +266,16 @@ void init( FILE* input1)
 				}
 			}
 
+			out_table[Yout].used = 1;
+
+			if(!out_table[Yout].inner_table)
+				out_table[Yout].inner_table = create_inner_table();
+
 			for(int i = 0; i < Yin; i++)
 			{
 				out_table[Yout].inner_table[i].used = 1;
 			}
+
 		}
 		else
 		{
@@ -294,23 +284,22 @@ void init( FILE* input1)
 				out_table[Xout].inner_table[i].used = 1;
 			}
 		}
+	}
 }
 
 int main(void)
 {
-	FILE* fp = fopen("in1.txt", "r+");
-	init(fp);
+	M = 10;
+	FILE* in1 = fopen("in1.txt", "r+");
+	FILE* in2 = fopen("in2.txt", "r+");
 
-	for( uint32_t i = 0; i < 1024; i++)
+	init(in1);
+
+	uint32_t inputtanokunancisim;
+
+	while(fscanf(in2, "%x", &inputtanokunancisim) != EOF)
 	{
-		if( out_table[i].used)
-		{
-			for( uint32_t j = 0; j < 1024; j++)
-			{
-				if( out_table[i].inner_table[j].used)
-					printf( "%d: %d \n", i, j);
-			}
-		}
+		memory_access(inputtanokunancisim, 0);
 	}
 
 	return 0;
