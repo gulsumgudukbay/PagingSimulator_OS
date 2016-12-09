@@ -304,27 +304,9 @@ int main(int argc, char** argv)
   opterr = 0;
 	char* out_file_name;
 
-	for (int index = 0; index < argc; index++){
-		if(index == 1){
-			in1 = fopen(argv[index], "r+");
-			printf("in1 filename %s\n", argv[index]);
-		}
-		else if(index == 2){
-			in2 = fopen(argv[index], "r+");
-			printf("in2 filename %s\n", argv[index]);
-		}
-		else if(index == 3){
-			M = atoi(argv[index]);
-			printf("M:  %d\n", M);
 
-		}
-		else if(index == 4){
-			out_file_name = argv[index];
-		}
-	}
-
-
-  while ((c = getopt (argc, argv, "a:r:")) != -1)
+  while ((c = getopt (argc, argv, "a:r:")) != -1){
+//	printf("c: %d\n",c);
     switch (c)
     {
       case 'a':
@@ -345,10 +327,32 @@ int main(int argc, char** argv)
       default:
         abort ();
       }
+		}
   printf ("a = %d, vmsize = %x\n", a, vmsize);
 
 
+		if(vmsize == 0){ //r verilmediyse 0 kaliyor
+			in1 = fopen(argv[1], "r+");
+			printf("in1 filename %s\n", argv[1]);
 
+			in2 = fopen(argv[2], "r+");
+			printf("in2 filename %s\n", argv[2]);
+
+			M = atoi(argv[3]);
+			printf("M:  %d\n", M);
+
+			out_file_name = argv[4];
+
+		}
+		else{
+			in2 = fopen(argv[1], "r+");
+			printf("in2 filename %s\n", argv[1]);
+
+			M = atoi(argv[2]);
+			printf("M:  %d\n", M);
+
+			out_file_name = argv[3];
+		}
 
 	///////////////////////////////////////////////////////////////////////////////////////////
 
