@@ -304,7 +304,6 @@ int main(int argc, char** argv)
   opterr = 0;
 	char* out_file_name;
 
-
   while ((c = getopt (argc, argv, "a:r:")) != -1){
 //	printf("c: %d\n",c);
     switch (c)
@@ -330,7 +329,10 @@ int main(int argc, char** argv)
 		}
   printf ("a = %d, vmsize = %x\n", a, vmsize);
 
-
+//sorun burada, -r nin verilip veirlmedigini anca yukardaki getopttan sonra anlayabiliyoz
+//o yuzden bu isi o looptan sonra yapiyorum ama looptan sonra yapinca seg fault yiyom
+//eger basta yaparsam seg fault yemiyom ama r nin verilip veirlmedigini anlayamam
+//argc ye gore yaparim diyosan da in1 ya verildiyse o zmn napcan? 
 		if(vmsize == 0){ //r verilmediyse 0 kaliyor
 			in1 = fopen(argv[1], "r+");
 			printf("in1 filename %s\n", argv[1]);
