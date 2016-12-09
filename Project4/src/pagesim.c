@@ -203,19 +203,19 @@ struct in_table_entry* create_inner_table()
 
 struct range_node * read_ranges( FILE* input1)
 {
-		struct range_node *ranges, *cur;
-		ranges = 0;
+	uint32_t X, Y;
+	struct range_node *ranges, *cur;
+	ranges = 0;
 
-		while(fscanf(input1, "%x %x", &X, &Y) != EOF)
-		{
-			cur = (struct range_node*)malloc(sizeof(struct range_node));
-			cur->X = X;
-			cur->Y = Y;
-			cur->next = ranges;
-			ranges = cur;
-		}
-
-		return ranges;
+	while(fscanf(input1, "%x %x", &X, &Y) != EOF)
+	{
+		cur = (struct range_node*)malloc(sizeof(struct range_node));
+		cur->X = X;
+		cur->Y = Y;
+		cur->next = ranges;
+		ranges = cur;
+	}
+	return ranges;
 }
 
 void init( struct range_node * ranges)
@@ -223,6 +223,7 @@ void init( struct range_node * ranges)
 	uint32_t Xin, Yin;
 	uint32_t Xout, Yout;
 	uint32_t X, Y;
+	struct range_node *cur;
 
 
 	for(int i = 0; i < 1024; i++)
