@@ -137,8 +137,7 @@ void memory_access( uint32_t addr, int isLRU)
 	{
 		if( isLRU)
 			requeue(addr);
-
-
+			
 		uint32_t fnum = out_table[outer_table].inner_table[inner_table].frame_number;
 		uint32_t phys_addr = ((fnum << 12) & 0xFFFFF000) | page_offset;
 		printf( "0x%08x\n", phys_addr);
@@ -304,6 +303,17 @@ int main(int argc, char** argv)
   opterr = 0;
 	char* out_file_name;
 
+	in1 = fopen(argv[1], "r+");
+	printf("in1 filename %s\n", argv[1]);
+
+	in2 = fopen(argv[2], "r+");
+	printf("in2 filename %s\n", argv[2]);
+
+	M = atoi(argv[3]);
+	printf("M:  %d\n", M);
+
+	out_file_name = argv[4];
+
   while ((c = getopt (argc, argv, "a:r:")) != -1){
 //	printf("c: %d\n",c);
     switch (c)
@@ -329,10 +339,10 @@ int main(int argc, char** argv)
 		}
   printf ("a = %d, vmsize = %x\n", a, vmsize);
 
-//sorun burada, -r nin verilip veirlmedigini anca yukardaki getopttan sonra anlayabiliyoz
+/*//sorun burada, -r nin verilip veirlmedigini anca yukardaki getopttan sonra anlayabiliyoz
 //o yuzden bu isi o looptan sonra yapiyorum ama looptan sonra yapinca seg fault yiyom
 //eger basta yaparsam seg fault yemiyom ama r nin verilip veirlmedigini anlayamam
-//argc ye gore yaparim diyosan da in1 ya verildiyse o zmn napcan? 
+//argc ye gore yaparim diyosan da in1 ya verildiyse o zmn napcan?
 		if(vmsize == 0){ //r verilmediyse 0 kaliyor
 			in1 = fopen(argv[1], "r+");
 			printf("in1 filename %s\n", argv[1]);
@@ -355,7 +365,7 @@ int main(int argc, char** argv)
 
 			out_file_name = argv[3];
 		}
-
+*/
 	///////////////////////////////////////////////////////////////////////////////////////////
 
 	if(vmsize == 0){
