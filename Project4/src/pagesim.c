@@ -121,12 +121,11 @@ struct in_table_entry
 struct out_table_entry out_table[1024];
 int M;
 
-void memory_access( uint32_t addr, int isLRU)
+void memory_access( uint32_t addr, int isLRU, FILE* fp)
 {
 	uint32_t page_offset;
 	uint32_t inner_table;
 	uint32_t outer_table;
-
 	//evil bit level integer hacking
 	page_offset = addr & (0x00000FFF);
 	inner_table = (addr & (0x003FF000)) >> 12;
@@ -137,10 +136,11 @@ void memory_access( uint32_t addr, int isLRU)
 	{
 		if( isLRU)
 			requeue(addr);
-			
+
 		uint32_t fnum = out_table[outer_table].inner_table[inner_table].frame_number;
 		uint32_t phys_addr = ((fnum << 12) & 0xFFFFF000) | page_offset;
 		printf( "0x%08x\n", phys_addr);
+	  fprintf(fp,  "0x%08x\n", phys_addr);
 	}
 	else
 	{
@@ -154,6 +154,8 @@ void memory_access( uint32_t addr, int isLRU)
 			uint32_t fnum = out_table[outer_table].inner_table[inner_table].frame_number;
 			uint32_t phys_addr = ((fnum << 12) & 0xFFFFF000) | page_offset;
 			printf( "0x%08x x\n", phys_addr);
+			fprintf(fp,  "0x%08x x\n", phys_addr);
+
 		}
 		else
 		{
@@ -170,6 +172,8 @@ void memory_access( uint32_t addr, int isLRU)
 				uint32_t fnum = out_table[outer_table].inner_table[inner_table].frame_number;
 				uint32_t phys_addr = ((fnum << 12) & 0xFFFFF000) | page_offset;
 				printf( "0x%08x x\n", phys_addr);
+				fprintf(fp,  "0x%08x x\n", phys_addr);
+
 			}
 			else
 			{
@@ -297,6 +301,7 @@ void init( struct range_node * ranges)
 int main(int argc, char** argv)
 {
 	FILE* in1, *in2;
+
 	uint32_t vmsize = 0;
 	int a = 0;
 	int c;
@@ -313,6 +318,7 @@ int main(int argc, char** argv)
 	printf("M:  %d\n", M);
 
 	out_file_name = argv[4];
+	FILE* fp = fopen(out_file_name, "w+");
 
   while ((c = getopt (argc, argv, "a:r:")) != -1){
 //	printf("c: %d\n",c);
@@ -385,8 +391,8 @@ int main(int argc, char** argv)
 
 	while(fscanf(in2, "%x", &inputtanokunancisim) != EOF)
 	{
-		memory_access(inputtanokunancisim, a);
+		memory_access(inputtanokunancisim, a, fp);
 	}
-
+	fclose(fp);
 	return 0;
 }
