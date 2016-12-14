@@ -131,6 +131,16 @@ void memory_access( uint32_t addr, int isLRU, FILE* fp)
 	inner_table = (addr & (0x003FF000)) >> 12;
 	outer_table = (addr & (0xFFC00000)) >> 22;
 
+	if( !out_table[outer_table].used)
+	{
+		printf("SEGMANTATION FAULT\n");
+		return;
+	}
+	else if( !out_table[outer_table].inner_table[inner_table].used)
+	{
+		printf("SEGMANTATION FAULT\n");
+		return;
+	}
 
 	if( out_table[outer_table].inner_table[inner_table].valid)
 	{
@@ -298,101 +308,119 @@ void init( struct range_node * ranges)
 	}
 }
 
+int arguments( int argc, char** argv, uint32_t* vmsize, int* M,
+							 char** input1, char** input2, char** avutbud, int* algo)
+{
+	int isRandom;
+	int r_index;
+	int a_index;
+
+	isRandom = 0;
+	for( int i = 0; i < argc; i++)
+	{
+		if( strcmp(argv[i], "-r") == 0)
+		{
+			isRandom = 1;
+			r_index = i;
+		}
+
+		if( strcmp(argv[i], "-a") == 0)
+		{
+			a_index = i;
+		}
+	}
+
+	if( isRandom)
+	{
+		*input2 = argv[1];
+		*M = atoi(argv[2]);
+		*avutbud = argv[3];
+		*algo = atoi(argv[a_index + 1]);
+		*vmsize = atoi(argv[r_index + 1]);
+	}
+	else
+	{
+		*input1 = argv[1];
+		*input2 = argv[2];
+		*M = atoi(argv[3]);
+		*avutbud = argv[4];
+		*algo = atoi(argv[a_index + 1]);
+	}
+
+	return isRandom;
+}
+
 int main(int argc, char** argv)
 {
-	FILE* in1, *in2;
+	FILE* in1;
+	FILE* in2;
+	FILE* out;
 
-	uint32_t vmsize = 0;
-	int a = 0;
-	int c;
-  opterr = 0;
-	char* out_file_name;
+	uint32_t vmsize;
+	int a;
+	char* out_name;
+	char* in1_name;
+	char* in2_name;
+	int isRandom;
 
-	in1 = fopen(argv[1], "r+");
-	printf("in1 filename %s\n", argv[1]);
-
-	in2 = fopen(argv[2], "r+");
-	printf("in2 filename %s\n", argv[2]);
-
-	M = atoi(argv[3]);
-	printf("M:  %d\n", M);
-
-	out_file_name = argv[4];
-	FILE* fp = fopen(out_file_name, "w+");
-
-  while ((c = getopt (argc, argv, "a:r:")) != -1){
-//	printf("c: %d\n",c);
-    switch (c)
-    {
-      case 'a':
-        a = atoi(optarg);
-        break;
-      case 'r':
-        sscanf(optarg,"%X",&vmsize);
-				printf( "vmsize: 0x%08x\n", vmsize);
-        break;
-      case '?':
-        if (optopt == 'a' || optopt == 'r')
-          fprintf (stderr, "Option -%c requires an argument.\n", optopt);
-        else if (isprint (optopt))
-          fprintf (stderr, "Unknown option `-%c'.\n", optopt);
-        else
-          fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
-        return 1;
-      default:
-        abort ();
-      }
+	if( argc != 8 && argc != 7)
+	{
+		if( argc != 8)
+		{
+			printf("involix inbudu\n");
+			return 1;
 		}
-  printf ("a = %d, vmsize = %x\n", a, vmsize);
-
-/*//sorun burada, -r nin verilip veirlmedigini anca yukardaki getopttan sonra anlayabiliyoz
-//o yuzden bu isi o looptan sonra yapiyorum ama looptan sonra yapinca seg fault yiyom
-//eger basta yaparsam seg fault yemiyom ama r nin verilip veirlmedigini anlayamam
-//argc ye gore yaparim diyosan da in1 ya verildiyse o zmn napcan?
-		if(vmsize == 0){ //r verilmediyse 0 kaliyor
-			in1 = fopen(argv[1], "r+");
-			printf("in1 filename %s\n", argv[1]);
-
-			in2 = fopen(argv[2], "r+");
-			printf("in2 filename %s\n", argv[2]);
-
-			M = atoi(argv[3]);
-			printf("M:  %d\n", M);
-
-			out_file_name = argv[4];
-
-		}
-		else{
-			in2 = fopen(argv[1], "r+");
-			printf("in2 filename %s\n", argv[1]);
-
-			M = atoi(argv[2]);
-			printf("M:  %d\n", M);
-
-			out_file_name = argv[3];
-		}
-*/
-	///////////////////////////////////////////////////////////////////////////////////////////
-
-	if(vmsize == 0){
-		struct range_node* rng = read_ranges( in1);
-		init(rng);
 	}
-	else{
+
+	isRandom = arguments( argc, argv, &vmsize, &M, &in1_name,
+												&in2_name, &out_name, &a);
+
+
+
+	in2 = fopen( in2_name, "r+");
+	out	= fopen( out_name, "w+");
+	if( isRandom)
+	{
+		if( argc != 8)
+		{
+			printf("involix inbudu\n");
+			return 1;
+		}
+
+		printf("\nin2: %s \nout: %s \nM: %d \nalgo: %d \nvmsize: %d \n", in2_name, out_name, M, a, vmsize);
+
 		struct range_node myrange;
 		myrange.next = 0;
 		myrange.X = 0;
 		myrange.Y = vmsize;
 		init(&myrange);
+
 	}
+	else
+	{
+		if( argc != 7)
+		{
+			printf("involix inbudu\n");
+			return 1;
+		}
+
+		printf("\nin1: %s \nin2: %s \nout: %s \nM: %d \nalgo: %d \n", in1_name, in2_name, out_name, M, a);
+
+		in1 = fopen( in1_name, "r+");
+		struct range_node* rng = read_ranges( in1);
+		init(rng);
+
+	}
+
 
 	//init(&myrange);
 	uint32_t inputtanokunancisim;
 
 	while(fscanf(in2, "%x", &inputtanokunancisim) != EOF)
 	{
-		memory_access(inputtanokunancisim, a, fp);
+		memory_access(inputtanokunancisim, a, out);
 	}
-	fclose(fp);
+
+	fclose(out);
 	return 0;
 }
