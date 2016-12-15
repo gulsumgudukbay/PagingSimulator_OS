@@ -435,7 +435,7 @@ int main(int argc, char** argv)
 	keko = 0;
 	if( isRandom)
 	{
-		for( int i = 0; i < (vmsize*M) / 10; i++)
+		for( int i = 0; i < 250000; i++)
 		{
 			uint32_t random_var = rand() % vmsize;
 			//printf("rv= %x\n", random_var);
