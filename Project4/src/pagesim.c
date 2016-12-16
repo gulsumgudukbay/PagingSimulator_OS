@@ -173,9 +173,10 @@ void memory_access( uint32_t addr, int isLRU, FILE* fp)
 			uint32_t victim = dequeue( &err);
 			if( !err)
 			{
+				uint32_t vic_fnum = out_table[(victim & (0xFFC00000)) >> 22].inner_table[(victim & (0x003FF000)) >> 12].frame_number;
 				printf( "victim is 0x%08x\n", victim);
 				out_table[(victim & (0xFFC00000)) >> 22].inner_table[(victim & (0x003FF000)) >> 12].valid = 0;
-				out_table[outer_table].inner_table[inner_table].frame_number = victim >> 12;
+				out_table[outer_table].inner_table[inner_table].frame_number = vic_fnum >> 12;
 				out_table[outer_table].inner_table[inner_table].valid = 1;
 				enqueue(addr);
 
