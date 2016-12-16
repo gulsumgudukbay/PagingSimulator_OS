@@ -264,7 +264,6 @@ void init( struct range_node * ranges)
 		Xoff = (X & (0x00000FFF));
 		Yoff = (Y & (0x00000FFF));
 
-		printf("%8x %8x: %x %x %x %x\n", X, Y, Xout, Yout, Xin, Yin);
 
 		out_table[Xout].used = 1;
 
@@ -416,7 +415,7 @@ int main(int argc, char** argv)
 
 	}
 
-	
+	/*
 	for( int i = 0; i < 1024; i++)
 	{
 		if( out_table[i].used)
@@ -430,7 +429,7 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-	
+	*/
 
 	pagefault_count = 0;
 	keko = 0;
