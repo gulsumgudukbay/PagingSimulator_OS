@@ -78,7 +78,6 @@ int requeue( uint32_t addr)
 			if( cur == queue_tail)
 				queue_tail = prev;
 
-			//ananı siktim
 			if( cur == queue_head)
 			{
 				queue_head = cur->next;
